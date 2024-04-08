@@ -1,0 +1,60 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 27 09:38:43 2024
+
+@author: NoBALAB
+"""
+
+from abaqus import *
+from abaqusConstants import *
+import math
+
+modelName = 'Model-1'
+loadName = 'Bending Moment'
+MOD = mdb.models[modelName]
+
+# 글로벌 좌표계의 원점
+origin = (0.0, 0.0, 0.0)
+# 글로벌 Y축을 기준으로 회전
+rotationAxis = (0.0, 1.0, 0.0)
+rad = [-10, -20, -30, -40, -50, -60, -70, -80, -90]
+
+
+for angle in rad:  # 각도 리스트를 통해 반복
+    # 각도를 라디안으로 변환
+    radians = math.radians(angle)
+    # 회전된 X축과 Y축을 계산
+    rotatedX = (math.cos(radians), 0.0, -math.sin(radians))
+    rotatedY = (math.sin(radians), 0.0, math.cos(radians))
+    
+    # DatumCsys 생성 및 ID 캡처
+    csys = MOD.rootAssembly.DatumCsysByThreePoints(name=str(angle), coordSysType=CARTESIAN, origin=origin, point1=rotatedX, point2=rotatedY)
+    csysID = csys.id
+    
+    # 생성된 CSYS ID를 사용하여 모멘트 하중의 CSYS 업데이트
+    MOD.loads[loadName].setValues(localCsys=MOD.rootAssembly.datums[csysID])
+    
+    loadValues = [0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28]
+    
+    for loadValue in loadValues:
+
+        MOD.loads[loadName].setValuesInStep(stepName='Step-1', cm1=1.75E+08*loadValue)
+
+        PressureValues = [0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3]    
+            
+        for PressureValue in PressureValues:
+                    
+            modelName = 'Model-1'
+                   
+            PressureName = 'Internal P'
+                    
+            TensionName = 'Axial T'
+                  
+            MOD.loads[PressureName].setValuesInStep(stepName='Step-1', magnitude=22.0696*PressureValue)
+            MOD.loads[TensionName].setValuesInStep(stepName='Step-1', magnitude=-156.999*PressureValue)
+            jobName = "Angle"+ str(angle).replace('-','H') + "M" + str(loadValue).replace('.', '_') + "P" + str(PressureValue).replace('.', '_')
+            # 작업(Job) 생성
+            mdb.Job(name=jobName, model=modelName, type=ANALYSIS)
+            
+            # 입력 파일 작성
+            mdb.jobs[jobName].writeInput(consistencyChecking=OFF)
