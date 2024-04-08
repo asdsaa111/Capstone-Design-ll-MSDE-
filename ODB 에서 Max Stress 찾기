@@ -1,0 +1,26 @@
+from abaqus import *
+from abaqusConstants import *
+from odbAccess import *
+
+#PressureValues = [0.1, 0.11, 0.12] 
+#loadValues = [0.08, 0.09, 0.1]
+#rad = [0,10,20]
+PressureValues = [0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3] 
+loadValues = [0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28]
+rad = [-10, -20, -30, -40, -50, -60, -70 ,-80, -90]
+
+for angle in rad:
+    for loadValue in loadValues:
+        for PressureValue in PressureValues:
+            odb_path = "Angle"+ str(angle).replace('-','H') + "M" + str(loadValue).replace('.', '_') + "P" + str(PressureValue).replace('.', '_')+".odb"
+            odb = openOdb(path=odb_path)
+            stress = odb.steps['Step-1'].frames[-1].fieldOutputs['S']
+            fieldValues = stress.values
+            max_mises = 0
+
+            for v in fieldValues:
+
+                max_mises = max(max_mises, v.mises)
+
+            print(str(angle) + "," + str(loadValue)+ "," +str(PressureValue) + ","  + str(max_mises))
+            odb.close()
